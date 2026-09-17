@@ -1,0 +1,543 @@
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+/* ================================================
+   1. DEFINITIONS & ENUMS FOR ADAPTIVE LEARNING
+   ================================================ */
+
+#define L_PRIMARY     1
+#define L_COLLEGE     2
+#define L_PHD         3
+#define L_CUSTOM      4
+
+#define S_YOUTUBE     1
+#define S_AI_AGENT    2
+#define S_BOOK        3
+#define S_CUSTOM      4
+
+#define SUB_CODING    1
+#define SUB_ENGLISH   2
+#define SUB_MATH      3
+#define SUB_CUSTOM    4
+
+/* ================================================
+   2. DATA STRUCTURES
+   ================================================ */
+
+typedef struct {
+    const char *title;
+    float rate;
+    int min_lvl;
+    int max_lvl;
+    int type;
+    int sub;
+} Resource;
+
+typedef struct {
+    // Initial Student Profile Data
+    char name[100];
+    char className[50];
+    char subjects[150];
+    char subjectInterest[100];
+    char goals[150];
+    char hobbies[150];
+
+    // Performance Module Inputs
+    float score;
+    float studyHours;
+    int selfEfficiency;
+    int parentalInvolvement;
+    int timeManagement;
+
+    int scoreLevel;
+    int studyLevel;
+    float performanceScore;
+
+    // Skill Gap Inputs
+    float requiredLevel;
+    float actualLevel;
+    float skillGap;
+
+    // Adaptation Inputs
+    int errorPattern;
+
+    // Progress Tracking Inputs
+    int total_tasks;
+    int completed_tasks;
+    float task_percentage;
+
+    // Calculated Overview Levels
+    float overallAverageLevel;
+    int successRateLevel;
+    int roundedAverageLevel;
+
+    // Learning Preference Selections
+    int lvl;
+    int style;
+    int sub;
+    char c_lvl[32];
+    char c_style[32];
+    char c_sub[32];
+} StudentProfile;
+
+/* ================================================
+   3. HELPER FUNCTIONS FOR INPUT FLUSHING
+   ================================================ */
+
+void clear_input_buffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+/* ================================================
+   4. INPUT & EVALUATION MODULES
+   ================================================ */
+
+int getInitialProfileInputs(StudentProfile *s) {
+    printf("=== 1. CREATE STUDENT PROFILE ===\n\n");
+
+    printf("Enter Student's Full Name: ");
+    if (!fgets(s->name, sizeof(s->name), stdin)) return 0;
+    s->name[strcspn(s->name, "\n")] = 0;
+
+    printf("Enter Class/Grade (e.g., 10th Grade): ");
+    if (!fgets(s->className, sizeof(s->className), stdin)) return 0;
+    s->className[strcspn(s->className, "\n")] = 0;
+
+    printf("Enter Subjects Enrolled (comma-separated): ");
+    if (!fgets(s->subjects, sizeof(s->subjects), stdin)) return 0;
+    s->subjects[strcspn(s->subjects, "\n")] = 0;
+
+    printf("Enter Subject of Most Interest (e.g., Physics): ");
+    if (!fgets(s->subjectInterest, sizeof(s->subjectInterest), stdin)) return 0;
+    s->subjectInterest[strcspn(s->subjectInterest, "\n")] = 0;
+
+    printf("Enter Academic/Career Goals: ");
+    if (!fgets(s->goals, sizeof(s->goals), stdin)) return 0;
+    s->goals[strcspn(s->goals, "\n")] = 0;
+
+    printf("Enter Sports and Hobbies: ");
+    if (!fgets(s->hobbies, sizeof(s->hobbies), stdin)) return 0;
+    s->hobbies[strcspn(s->hobbies, "\n")] = 0;
+
+    return 1;
+}
+
+int getPerformanceInputs(StudentProfile *s) {
+    printf("\n========== 2. PERFORMANCE ANALYSIS ==========\n");
+
+    printf("Enter Score (0-100%%): ");
+    if (scanf("%f", &s->score) != 1 || s->score < 0.0f || s->score > 100.0f) {
+        printf("Invalid score!\n");
+        return 0;
+    }
+
+    if (s->score < 10.0f) s->scoreLevel = 1;
+    else if (s->score < 20.0f) s->scoreLevel = 2;
+    else if (s->score < 30.0f) s->scoreLevel = 3;
+    else if (s->score < 40.0f) s->scoreLevel = 4;
+    else if (s->score < 50.0f) s->scoreLevel = 5;
+    else if (s->score < 60.0f) s->scoreLevel = 6;
+    else if (s->score < 70.0f) s->scoreLevel = 7;
+    else if (s->score < 80.0f) s->scoreLevel = 8;
+    else if (s->score < 90.0f) s->scoreLevel = 9;
+    else s->scoreLevel = 10;
+
+    printf("Enter Study Hours (0-13): ");
+    if (scanf("%f", &s->studyHours) != 1 || s->studyHours < 0.0f || s->studyHours > 13.0f) {
+        printf("Invalid study hours!\n");
+        return 0;
+    }
+
+    if (s->studyHours < 3.0f) s->studyLevel = 2;
+    else if (s->studyHours < 5.0f) s->studyLevel = 4;
+    else if (s->studyHours < 8.0f) s->studyLevel = 6;
+    else if (s->studyHours < 11.0f) s->studyLevel = 8;
+    else s->studyLevel = 10;
+
+    printf("Enter Self-Efficiency (1-10): ");
+    if (scanf("%d", &s->selfEfficiency) != 1 || s->selfEfficiency < 1 || s->selfEfficiency > 10) {
+        printf("Invalid Self-Efficiency value!\n");
+        return 0;
+    }
+
+    printf("Enter Parental Involvement (1-10): ");
+    if (scanf("%d", &s->parentalInvolvement) != 1 || s->parentalInvolvement < 1 || s->parentalInvolvement > 10) {
+        printf("Invalid Parental Involvement value!\n");
+        return 0;
+    }
+
+    printf("Enter Time Management Skills (1-10): ");
+    if (scanf("%d", &s->timeManagement) != 1 || s->timeManagement < 1 || s->timeManagement > 10) {
+        printf("Invalid Time Management value!\n");
+        return 0;
+    }
+
+    s->performanceScore = (s->scoreLevel + s->studyLevel + s->selfEfficiency + s->timeManagement) / 4.0f;
+    return 1;
+}
+
+int getSkillGapInputs(StudentProfile *s) {
+    printf("\n========== 3. SKILL-GAP ANALYSIS ==========\n");
+
+    printf("Enter Required Skill Level (1-10): ");
+    if (scanf("%f", &s->requiredLevel) != 1 || s->requiredLevel < 1.0f || s->requiredLevel > 10.0f) {
+        printf("Invalid Required Skill Level!\n");
+        return 0;
+    }
+
+    printf("Enter Candidate's Actual Skill Level (1-10): ");
+    if (scanf("%f", &s->actualLevel) != 1 || s->actualLevel < 1.0f || s->actualLevel > 10.0f) {
+        printf("Invalid Actual Skill Level!\n");
+        return 0;
+    }
+
+    s->skillGap = s->requiredLevel - s->actualLevel;
+    return 1;
+}
+
+int getErrorPatternInput(StudentProfile *s) {
+    printf("\n========== 4. ERROR PATTERN SELECTION ==========\n");
+    printf("1. Clear in concepts, but making mistakes in calculations\n");
+    printf("2. Forgetting formulas\n");
+    printf("3. No concept clarity\n");
+
+    printf("\nEnter your choice (1-3): ");
+    if (scanf("%d", &s->errorPattern) != 1 || s->errorPattern < 1 || s->errorPattern > 3) {
+        printf("Invalid Error Pattern choice!\n");
+        return 0;
+    }
+    return 1;
+}
+
+int getProgressTrackingInputs(StudentProfile *s) {
+    printf("\n========== 5. PROGRESS TRACKING ==========\n");
+
+    printf("Enter total number of tasks: ");
+    if (scanf("%d", &s->total_tasks) != 1 || s->total_tasks <= 0) {
+        printf("Total tasks must be greater than 0.\n");
+        return 0;
+    }
+
+    printf("Enter number of completed tasks: ");
+    if (scanf("%d", &s->completed_tasks) != 1 || s->completed_tasks < 0) {
+        printf("Completed tasks cannot be negative.\n");
+        return 0;
+    }
+
+    s->task_percentage = ((float)s->completed_tasks / s->total_tasks) * 100.0f;
+    return 1;
+}
+
+int getResourcePreferences(StudentProfile *s) {
+    printf("\n========== 6. RESOURCE PREFERENCE SELECTION ==========\n");
+
+    printf("1=Primary, 2=College, 3=PhD, 4=Manual\nLevel Choice: ");
+    if (scanf("%d", &s->lvl) != 1) return 0;
+    if (s->lvl == L_PRIMARY) printf("💡 [TIP] Optimized for gamified visual building blocks.\n");
+    else if (s->lvl == L_COLLEGE) printf("💡 [TIP] Optimized for implementation analysis and lab environments.\n");
+    else if (s->lvl == L_PHD) printf("💡 [TIP] Optimized for theoretical models and documentation review.\n");
+    else if (s->lvl == L_CUSTOM) { printf("Type Custom Level: "); scanf("%31s", s->c_lvl); }
+
+    printf("\n1=YT, 2=AI, 3=Book, 4=Manual\nStyle Choice: ");
+    if (scanf("%d", &s->style) != 1) return 0;
+    if (s->style == S_YOUTUBE) printf("💡 [TIP] Videos prioritize runtime overviews and top-down workflows.\n");
+    else if (s->style == S_AI_AGENT) printf("💡 [TIP] AI interfaces prioritize syntax debugging and active exploration.\n");
+    else if (s->style == S_BOOK) printf("💡 [TIP] Literature prioritizes dense terminology and long-form indexing.\n");
+    else if (s->style == S_CUSTOM) { printf("Type Custom Style: "); scanf("%31s", s->c_style); }
+
+    printf("\n1=Coding, 2=English, 3=Math, 4=Manual\nSubject Choice: ");
+    if (scanf("%d", &s->sub) != 1) return 0;
+    if (s->sub == SUB_CODING) printf("💡 [TIP] Focus on memory tracking, hardware registers, and algorithmic efficiency.\n");
+    else if (s->sub == SUB_ENGLISH) printf("💡 [TIP] Focus on contextual extraction and reading comprehension models.\n");
+    else if (s->sub == SUB_MATH) printf("💡 [TIP] Focus on differential calculations, matrices, and statistical sets.\n");
+    else if (s->sub == SUB_CUSTOM) { printf("Type Custom Subject: "); scanf("%31s", s->c_sub); }
+
+    return 1;
+}
+
+/* ================================================
+   5. PROCESSING & RESOURCE RECOMMENDATION AGENT
+   ================================================ */
+
+void displayStudyLevelAnalysis(int level) {
+    printf("\n================ STUDY LEVEL ANALYSIS ================\n");
+
+    switch(level) {
+        case 1:
+        case 2:
+            printf("Category: Low Level (Levels 1-2)\n\n"
+                   "1. Every great journey begins with a single, small step forward.\n"
+                   "2. Do not feel discouraged by where you are starting right now.\n"
+                   "3. Your potential is not fixed; it expands with daily effort.\n"
+                   "4. Focus on building simple, consistent daily study habits.\n"
+                   "5. Mistakes are not failures; they are proof that you are trying.\n"
+                   "6. Try breaking your study material into very small, bite-sized tasks.\n"
+                   "7. Dedicate just 15 to 20 minutes a day to clear up core basics.\n"
+                   "8. Reach out to peers or instructors whenever you feel stuck.\n"
+                   "9. Consistency will always beat intensity over a long period.\n"
+                   "10. Believe in your ability to grow and overcome these hurdles.\n"
+                   "11. You have untapped strength inside you waiting to be unleashed.\n"
+                   "12. Keep your head high and take it one concept at a time.\n");
+            break;
+
+        case 3:
+        case 4:
+            printf("Category: Intermediate Level (Levels 3-4)\n\n"
+                   "1. You have cleared the initial hurdles and laid a foundation.\n"
+                   "2. You are currently positioned at a crucial transition phase.\n"
+                   "3. Now is the perfect time to elevate your focus and drive.\n"
+                   "4. Push past your comfort zone to unlock the next skill tier.\n"
+                   "5. Review your weak spots systematically to avoid repeating errors.\n"
+                   "6. Increase your study sessions by adding active recall techniques.\n"
+                   "7. Challenge yourself with slightly harder problems each single day.\n"
+                   "8. Stay disciplined even when the initial excitement fades away.\n"
+                   "9. You are fully capable of reaching the average and high tiers.\n"
+                   "10. Track your progress weekly to visualize how much you improve.\n"
+                   "11. Eliminate distractions during your dedicated study hours.\n"
+                   "12. Stay hungry for knowledge and keep building your momentum.\n");
+            break;
+
+        case 5:
+        case 6:
+        case 7:
+            printf("Category: Average Level (Levels 5-7)\n\n"
+                   "1. Great job on maintaining a solid, reliable academic baseline.\n"
+                   "2. Your steady performance shows commendable effort and stability.\n"
+                   "3. However, being comfortable here might limit your true potential.\n"
+                   "4. You definitely have the capacity to bridge the gap to excellence.\n"
+                   "5. To improve, transition from passive reading to active practice.\n"
+                   "6. Analyze the subtle mistakes that prevent you from scoring higher.\n"
+                   "7. Time management during exams could be your key area of growth.\n"
+                   "8. Dive deeper into the 'why' behind complex concepts you learn.\n"
+                   "9. Set higher benchmarks for yourself instead of settling here.\n"
+                   "10. Consistency is good, but optimization will take you to the top.\n"
+                   "11. Challenge yourself with advanced mock tests or extra assignments.\n"
+                   "12. Keep pushing forward; the high-level tier is within your grasp.\n");
+            break;
+
+        case 8:
+            printf("Category: High Level (Level 8)\n\n"
+                   "1. Congratulations on achieving an excellent academic standard.\n"
+                   "2. Your hard work, focus, and sharp understanding are highly apparent.\n"
+                   "3. Reaching this high tier is a significant and impressive milestone.\n"
+                   "4. Recommendation: Start sharing your knowledge with your peers.\n"
+                   "5. Explaining concepts to others will solidify your own mastery.\n"
+                   "6. Peer mentoring can open up fresh perspectives on familiar topics.\n"
+                   "7. Keep fine-tuning your skills to minimize any minor mistakes.\n"
+                   "8. Explore elective topics related to your current curriculum.\n"
+                   "9. Maintain this stellar momentum as challenges get more demanding.\n"
+                   "10. Your dedication sets a fantastic benchmark for those around you.\n"
+                   "11. Stay curious, stay humble, and keep striving for the peak.\n"
+                   "12. The journey to total mastery is well underway for you.\n");
+            break;
+
+        case 9:
+            printf("Category: High Level (Level 9)\n\n"
+                   "1. You are performing at an outstanding and truly superior level.\n"
+                   "2. Your deep conceptual clarity and execution are highly impressive.\n"
+                   "3. You stand out clearly among your peers due to your dedication.\n"
+                   "4. Recommendation: Engage in independent research or unique projects.\n"
+                   "5. Apply your theoretical knowledge to real-world practical scenarios.\n"
+                   "6. Look for specialized certifications to further enhance your profile.\n"
+                   "7. Do not let complacency settle in at this high stage.\n"
+                   "8. Seek out complex problem-solving forums or advanced competitions.\n"
+                   "9. Connect with industry experts or mentors to expand your vision.\n"
+                   "10. Your rigorous work ethic is paving the way for future success.\n"
+                   "11. Keep raising the bar higher and challenge your own boundaries.\n"
+                   "12. True excellence lies in continuous learning and adaptation.\n");
+            break;
+
+        case 10:
+            printf("Category: High Level (Level 10)\n\n"
+                   "1. You have achieved absolute peak performance and complete mastery.\n"
+                   "2. Your dedication, discipline, and intellect are truly exemplary.\n"
+                   "3. Maintaining the absolute top level requires extraordinary effort.\n"
+                   "4. Recommendation: Focus on innovation, leadership, and creating impact.\n"
+                   "5. Try publishing your findings or creating comprehensive study guides.\n"
+                   "6. Lead academic clubs or organize collaborative learning workshops.\n"
+                   "7. Use your elite skills to solve complex, open-ended real problems.\n"
+                   "8. Aim to become a thought leader in your chosen field of study.\n"
+                   "9. Continue to inspire everyone around you with your great journey.\n"
+                   "10. Remember that learning is a lifelong pursuit with no final end.\n"
+                   "11. Keep pushing the absolute frontier of what you can accomplish.\n"
+                   "12. The world needs visionaries like you to guide future generations.\n");
+            break;
+
+        default:
+            printf("Error: Invalid calculated level.\n");
+            break;
+    }
+}
+
+void runAgentAndGeneratePlan(const StudentProfile *s, const Resource db[], int dbSize) {
+    float avg = (s->performanceScore + s->actualLevel) / 2.0f;
+    int roundedAvg = (int)roundf(avg);
+
+    if (roundedAvg < 1) roundedAvg = 1;
+    if (roundedAvg > 10) roundedAvg = 10;
+
+    int successRate;
+    if (s->performanceScore < 3.0f) successRate = 1;
+    else if (s->performanceScore < 5.0f) successRate = 3;
+    else if (s->performanceScore < 7.0f) successRate = 5;
+    else if (s->performanceScore < 9.0f) successRate = 7;
+    else successRate = 10;
+
+    int idx = -1;
+    float high = -1.0f;
+
+    for (int i = 0; i < dbSize; i++) {
+        if (s->sub != SUB_CUSTOM && db[i].sub != s->sub) continue;
+        if (s->lvl != L_CUSTOM && (s->lvl < db[i].min_lvl || s->lvl > db[i].max_lvl)) continue;
+        if (s->style != S_CUSTOM && db[i].type != s->style) continue;
+
+        if (db[i].rate > high) {
+            high = db[i].rate;
+            idx = i;
+        }
+    }
+
+    printf("\n====================================\n");
+    printf("           STUDENT PROFILE          \n");
+    printf("====================================\n");
+    printf("Name:               %s\n", s->name);
+    printf("Class:              %s\n", s->className);
+    printf("Subjects:           %s\n", s->subjects);
+    printf("Subject Interest:   %s\n", s->subjectInterest);
+    printf("Goals:              %s\n", s->goals);
+    printf("Sports & Hobbies:   %s\n", s->hobbies);
+    printf("====================================\n");
+
+    printf("\n========== INTEGRATED EVALUATION RESULT ==========\n");
+    printf("Candidate Name        : %s\n", s->name);
+    printf("Score Level           : %d/10 (%.2f%%)\n", s->scoreLevel, s->score);
+    printf("Study Hours Level     : %d/10 (%.2f hrs)\n", s->studyLevel, s->studyHours);
+    printf("Self-Efficiency       : %d/10\n", s->selfEfficiency);
+    printf("Time Management       : %d/10\n", s->timeManagement);
+    printf("Parental Involvement  : %d/10 (Excluded from score)\n", s->parentalInvolvement);
+    printf("--------------------------------------------------\n");
+    printf("Performance Score     : %.2f/10\n", s->performanceScore);
+    printf("Actual Skill Level    : %.2f/10\n", s->actualLevel);
+    printf("Required Skill Level  : %.2f/10\n", s->requiredLevel);
+    printf("Skill Gap             : %.2f point(s)\n", s->skillGap);
+    printf("--------------------------------------------------\n");
+    printf("OVERALL AVERAGE LEVEL : %.2f/10\n", avg);
+    printf("ROUNDED STUDY LEVEL   : %d/10\n", roundedAvg);
+    printf("Success Rate Level    : %d/10\n", successRate);
+
+    printf("\n--- Progress Tracking ---\n");
+    printf("Tasks Completed: %d / %d\n", s->completed_tasks, s->total_tasks);
+    printf("Completion Rate: %.2f%%\n", s->task_percentage);
+
+    if (s->task_percentage == 100.0f) {
+        printf("Status: Project Complete!\n");
+    } else if (s->task_percentage >= 50.0f) {
+        printf("Status: Good progress! Over halfway done.\n");
+    } else {
+        printf("Status: In Progress. Keep going!\n");
+    }
+
+    printf("\n==================================================\n");
+    if (idx != -1) {
+        printf("🎯 BEST RESOURCE MATCH: %s [Rating: %.1f/5.0 Stars]\n", db[idx].title, db[idx].rate);
+    } else {
+        printf("🤖 [AI FALLBACK DETECTED]: No exact repository entry matching constraints.\n");
+    }
+
+    printf("\n📊 DYNAMICALLY GENERATED LEARNING PLAN FOR %s\n", s->name);
+    printf("--------------------------------------------------\n");
+
+    printf("📚 SUBJECT TRACK ROADMAP: ");
+    if (s->sub == SUB_CODING) {
+        printf("Computer Science & Low-Level Code Optimization\n");
+        printf("   -> Strategy: Break tasks into separate, isolated coding functions before linking logic flows.\n");
+        printf("   -> Practice: Track pointer variables manually on paper to map physical memory stack transformations.\n");
+        printf("   -> Secret Trick: Use explicit buffer limits within string collectors to avoid segment faults/vulnerabilities.\n");
+    } else if (s->sub == SUB_ENGLISH) {
+        printf("Technical Linguistics & Structural Reading\n");
+        printf("   -> Strategy: Scan heavy documentation tables using semantic markers to instantly target core intents.\n");
+        printf("   -> Practice: Condense massive multi-paragraph papers down to 3 bullet points using active summarization.\n");
+        printf("   -> Secret Trick: Maintain an isolated lexicon handbook for technical jargon encountered across domains.\n");
+    } else if (s->sub == SUB_MATH) {
+        printf("Mathematical Synthesis & Algorithmic Logic\n");
+        printf("   -> Strategy: Treat operations as multi-dimensional data pipelines handling distinct information arrays.\n");
+        printf("   -> Practice: Solve problem variants with extreme variable shifts to recognize structural underlying logic patterns.\n");
+        printf("   -> Secret Trick: Master core math axioms visually (e.g., graphing derivatives) rather than memorizing text blocks.\n");
+    } else {
+        printf("Custom Domain Layout (\"%s\")\n", s->c_sub);
+        printf("   -> Strategy: Isolate basic rules first, then assemble them systematically to evaluate compound interactions.\n");
+    }
+
+    printf("\n🎓 INTENSITY MILESTONES: ");
+    if (s->lvl == L_PRIMARY) {
+        printf("Primary Baseline Foundation\n");
+        printf("   -> Session Length: Restrict high-focus topics to clean 20-minute windows followed by rapid review loops.\n");
+        printf("   -> Memory Triggers: Convert hard abstract concepts into graphical cartoons or spatial real-world block analogies.\n");
+    } else if (s->lvl == L_COLLEGE) {
+        printf("Undergraduate / Practical Applied Engineering\n");
+        printf("   -> Session Length: Execute 45-minute focused exploration windows paired with immediate compilation checks.\n");
+        printf("   -> Memory Triggers: Convert dry textbook theory models directly into deployable, functional micro-lab projects.\n");
+    } else if (s->lvl == L_PHD) {
+        printf("Postgraduate / Formal Verification Research\n");
+        printf("   -> Session Length: Deep multi-hour analytical sprints dedicated to edge-case evaluations and paper reviews.\n");
+        printf("   -> Memory Triggers: Question data integrity and validity limits of every source; cross-examine peer models.\n");
+    } else {
+        printf("Custom User Tier Baseline (\"%s\")\n", s->c_lvl);
+        printf("   -> Session Length: Build progress milestones that systematically connect introductory facts to complex execution tasks.\n");
+    }
+
+    printf("\n🛠️ STUDY METHOD DELIVERY TRICKS: ");
+    if (s->style == S_YOUTUBE) {
+        printf("Visual Video Stream Pipeline\n");
+        printf("   -> Optimization Rule: Downscale video speed to 0.75x when parsing complex architectural blueprints.\n");
+        printf("   -> Active Loop Habit: Pause streams right before an instructor outputs a solution; spend 3 minutes closing it yourself.\n");
+    } else if (s->style == S_AI_AGENT) {
+        printf("Interactive Conversational AI Sandbox\n");
+        printf("   -> Optimization Rule: Pass compiler tracking blocks or exceptions directly into prompt loops for syntax root audits.\n");
+        printf("   -> Active Loop Habit: Ask the AI engine to generate unique edge-case interview quizzes matching your target level.\n");
+    } else if (s->style == S_BOOK) {
+        printf("Structured Lit & E-Book Indexing\n");
+        printf("   -> Optimization Rule: Use marginal syntax notes; bookmark every major formula matrix or definitions table instantly.\n");
+        printf("   -> Active Loop Habit: Force your brain to map textbook indices onto real software or systems layouts to confirm facts.\n");
+    } else {
+        printf("Custom Channel Infrastructure (\"%s\")\n", s->c_style);
+        printf("   -> Optimization Rule: Consolidate incoming raw documentation files into highly structured markdown study assets.\n");
+    }
+
+    displayStudyLevelAnalysis(roundedAvg);
+}
+
+/* ================================================
+   6. MAIN ENTRY POINT
+   ================================================ */
+
+int main() {
+    const Resource repo[] = {
+        {"ABC Phonics Mastery", 4.2f, L_PRIMARY, L_PRIMARY, S_YOUTUBE, SUB_ENGLISH},
+        {"Primary Math Block", 4.6f, L_PRIMARY, L_PRIMARY, S_AI_AGENT, SUB_MATH},
+        {"Grammar Essentials", 4.4f, L_PRIMARY, L_COLLEGE, S_BOOK, SUB_ENGLISH},
+        {"C Core Loops Guide", 4.5f, L_COLLEGE, L_COLLEGE, S_YOUTUBE, SUB_CODING},
+        {"DSA Blueprint Manual", 4.7f, L_COLLEGE, L_COLLEGE, S_BOOK, SUB_CODING},
+        {"Advanced PenTesting", 4.9f, L_COLLEGE, L_PHD, S_AI_AGENT, SUB_CODING},
+        {"Formal Cryptography", 4.8f, L_PHD, L_PHD, S_BOOK, SUB_CODING},
+        {"Quantum Mechanics", 4.7f, L_COLLEGE, L_PHD, S_YOUTUBE, SUB_MATH}
+    };
+    const int repoSize = sizeof(repo) / sizeof(repo[0]);
+
+    StudentProfile student;
+
+    printf("=== ADAPTIVE INTEGRATED LEARNING PORTAL ===\n\n");
+
+    if (!getInitialProfileInputs(&student)) return 1;
+    if (!getPerformanceInputs(&student)) return 1;
+    if (!getSkillGapInputs(&student)) return 1;
+    if (!getErrorPatternInput(&student)) return 1;
+    if (!getProgressTrackingInputs(&student)) return 1;
+    if (!getResourcePreferences(&student)) return 1;
+
+    runAgentAndGeneratePlan(&student, repo, repoSize);
+
+    return 0;
+}
